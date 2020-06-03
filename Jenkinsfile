@@ -43,6 +43,7 @@ pipeline {
         stage('Build') {
             steps {
                 // sh './gradlew bootjar'
+                sh "docker rmi ${customLocalImage} || true"
                 sh "docker build -t ${customLocalImage} ."
                 sendSlackMessage "Build Successul"
             }
@@ -51,6 +52,7 @@ pipeline {
         stage('Publish') {
             steps {
                 sh "docker tag ${customLocalImage} ${dockerPublisherName}/${dockerRepoName}:alpha-0.0.${BUILD_NUMBER}"
+                sh "docker tag ${customLocalImage} ${dockerPublisherName}/${dockerRepoName}:latest"
                 sh "docker push ${dockerPublisherName}/${dockerRepoName}"
                 sendSlackMessage "Publish Successul"
             }
@@ -59,9 +61,8 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh """
-                    docker network rm simple-ng-overlay || true
-                    docker network create --driver overlay --attachable simple-ng-overlay
-                    docker service rm simple-ng-service || true
+                    docker service rm simple-ng-service  || true
+                    docker network create --driver overlay --attachable simple-ng-overlay || true
                     docker service create --replicas 3 --network simple-ng-overlay --name simple-ng-service -p 9090:80 ${dockerPublisherName}/${dockerRepoName}
                 """
             }
