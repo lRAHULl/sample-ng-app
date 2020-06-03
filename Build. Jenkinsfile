@@ -1,71 +1,76 @@
 // Define the variables
+
+// Docker Variables
 def dockerPublisherName = "rahulraju"
 def dockerRepoName = "sample-ng-app"
 
+// Git Variables
 def gitRepoName = "https://github.com/lRAHULl/sample-ng-app.git"
 def gitBranch = "master"
 
+// Custom-Image name
 def customLocalImage = "sample-ng-app-image"
 
+// Triggers
 properties([pipelineTriggers([githubPush()])])
+
+// Pipeline script
 pipeline {
+    // Agents
     agent {
+        // Nodes to run the job on
         node {
             label 'linux-slave'
         }
     }
 
+    // Stages In the pipeline
     stages {
+        // Checkout from the Source Control
         stage('Checkout') {
             steps {
                 git branch: "${gitBranch}", url: "${gitRepoName}"
             }
         }
 
-        // stage('Code Analysis And Testing') {
-        //     parallel {
-        //         stage('Static Code Analysis') {
-        //             steps {
-        //                 sh 'chmod +x gradlew'
-        //                 // sh './gradlew checkstyle'
-        //             }
-        //         }
-
-        //         stage('Unit Testing') {
-        //             steps {
-        //                 echo "Testing"
-        //                 // sh './gradlew test'
-        //             }
-        //         }
-        //     }
-        // }
-
+        // Build the Docker image
         stage('Build') {
             steps {
-                // sh './gradlew bootjar'
+                // Remove the image if it exists.
                 sh "docker rmi ${customLocalImage} || true"
+                // Build the custom image and give a custom name.
                 sh "docker build -t ${customLocalImage} ."
+                // Send message to slack.
                 sendSlackMessage "Build Successul"
             }
         }
 
+        // Publish the image to docker registry
         stage('Publish') {
             steps {
+                // Tag the image with the build number
                 sh "docker tag ${customLocalImage} ${dockerPublisherName}/${dockerRepoName}:alpha-0.0.${BUILD_NUMBER}"
+                // Tag the image with 'latest'
                 sh "docker tag ${customLocalImage} ${dockerPublisherName}/${dockerRepoName}:latest"
+                // Push to Docker hub
                 sh "docker push ${dockerPublisherName}/${dockerRepoName}"
+                // Send the message to the slack
                 sendSlackMessage "Publish Successul"
             }
         }
 
+        // Clean the system
         stage('Clean') {
             steps {
+                // Remove the custom image created.
                 sh "docker rmi ${customLocalImage} || true"
             }
         }
 
     }
 }
+
+// Method to send message to Slack.
 void sendSlackMessage(String message) {
     slackSend botUser: true, channel: 'private_s3_file_upload', failOnError: true, message: "Message From http://3.231.228.54:8080/: \n${message}", teamDomain: 'codaacademy2020', tokenCredentialId: 'coda-academy-slack'
 }

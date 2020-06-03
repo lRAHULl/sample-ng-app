@@ -1,19 +1,26 @@
+// Define Variables
 
+// Docker Variables
 def dockerPublisherName = "rahulraju"
 def dockerRepoName = "sample-ng-app"
 
-
+// Pipeline Triggers
 properties([pipelineTriggers([upstream(threshold: 'UNSTABLE', upstreamProjects: 'sample-angular-app')])])
-
+// Pipeline Script
 pipeline {
+    // Top-level Agents
     agent {
+        // Node to run the job on.
         node {
             label 'linux-slave'
         }
     }
 
+    // Stages of the pipeline
     stages {
+        // Deploy stage
         stage('Deploy') {
+            // Create an overlay network and Deploy the application to docker swarm.
             steps {
                 sh """
                     docker service rm simple-ng-service  || true
