@@ -58,16 +58,6 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
-            steps {
-                sh """
-                    docker service rm simple-ng-service  || true
-                    docker network create --driver overlay --attachable simple-ng-overlay || true
-                    docker service create --replicas 3 --network simple-ng-overlay --name simple-ng-service -p 9090:80 ${dockerPublisherName}/${dockerRepoName}
-                """
-            }
-        }
-
         stage('Clean') {
             steps {
                 sh "docker rmi ${customLocalImage} || true"

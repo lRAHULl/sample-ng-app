@@ -1,0 +1,26 @@
+
+def dockerPublisherName = "rahulraju"
+def dockerRepoName = "sample-ng-app"
+
+
+properties([pipelineTriggers([upstream(threshold: 'UNSTABLE', upstreamProjects: 'sample-angular-app')])])
+
+pipeline {
+    agent {
+        node {
+            label 'linux-slave'
+        }
+    }
+
+    stages {
+        stage('Deploy') {
+            steps {
+                sh """
+                    docker service rm simple-ng-service  || true
+                    docker network create --driver overlay --attachable simple-ng-overlay || true
+                    docker service create --replicas 3 --network simple-ng-overlay --name simple-ng-service -p 9090:80 ${dockerPublisherName}/${dockerRepoName}
+                """
+            }
+        }
+    }
+}
