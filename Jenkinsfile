@@ -1,4 +1,8 @@
 node('jenkins-angular') {
+    stage('checkout') {
+        git branch: "${gitBranch}", url: "${gitRepoName}"
+    }
+  
     stage('Build') {
         container('nodejs') {
             sh "npm install"
